@@ -1,4 +1,4 @@
 /* Macros */
-#define LED_DDR DDRC
-#define LED_PORT PORTC
+#define LED_DDR DDRB
+#define LED_PORT PORTB
 #define LED_PIN 7
