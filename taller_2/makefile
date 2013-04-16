@@ -18,8 +18,8 @@ F_CPU        = 16000000
 F_USB        = $(F_CPU)
 OPTIMIZATION = s
 TARGET       = main
-SRC          = $(TARGET).c USBtoSerial.c Descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS) blink.c 
-LUFA_PATH    = /home/ajw/local/lufa/LUFA
+SRC          = $(TARGET).c USBtoSerial.c Descriptors.c blink.c $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
+LUFA_PATH    = ../LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -IConfig/
 LD_FLAGS     =
 
