@@ -58,7 +58,7 @@ int main(void)
 	    }
 	    
 	    if (data_in == 0x0A || data_in == 0x0D) {
-		if(buffer_i>N){
+		if(buffer_i>N || buffer_i<1){
 		    write_buffer(error,sizeof(error)-1);
 		    buffer[0]='\0';
 		    buffer_i=0;
