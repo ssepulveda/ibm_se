@@ -64,8 +64,7 @@ void init(void){
 void write_serial(char *buffer)
 {
     int i=0;
-    int N=sizeof(buffer);
-    while(i<=N){
+    while(buffer[i]!='\0'){
 	serial_write(buffer[i++]);
     }
     serial_write(0x0A);
