@@ -20,7 +20,7 @@ void write_serial(char *buffer);
 void read_data(void);
 
 // Variables globales
-volatile char sensorData[4];
+volatile char sensorData[5];
 
 int main(void)
 {
@@ -39,21 +39,19 @@ void init(void){
     //*** configuracion del ADC
     //configurar el puerto ADC7=A0
     ADMUX|=(1<<MUX0 | 1<<MUX1 | 1<<MUX2);
-    // confiurar FS del ADC
-    ADCSRA|=1<<ADPS2;
-    // configurar bits del ADC 8 bits
-    ADMUX|=1<<ADLAR;
+    // confiurar FS del ADC @125 KHz
+    ADCSRA=(1<<ADEN | 1<<ADPS2 | 1<<ADPS1 | 1<<ADPS0);
+    // configurar resolucion en 8 bits
+    //ADMUX|=1<<ADLAR;
     // configurar referencia para conversion
     ADMUX|=1<<REFS0;
-    // free-running mode
-    //ADCSRA|=1<<ADFR;
     // habilitar la interrupcion del ADC
     ADCSRA|=1<<ADIE;
     // habilitar ADC
     ADCSRA|=1<<ADEN;
     // iniciar la conversion ADC
     ADCSRA|=1<<ADSC;
-    /* fin de configuracion del ADC */
+    //*** fin de configuracion del ADC
 
     //*** Habilitar interrupciones globales
     sei();
@@ -80,5 +78,6 @@ void read_data(void)
 ISR(ADC_vect)
 {
     // Convertir resultado en string
-    itoa(ADCH,sensorData,10);
+    uint8_t low=ADCL;
+    itoa((ADCH<<8|low),sensorData,10);
 }
