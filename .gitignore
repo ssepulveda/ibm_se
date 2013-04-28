@@ -7,5 +7,7 @@
 *.map
 *.sym
 *.xml
+*~
+#*#
 
 LUFA/
