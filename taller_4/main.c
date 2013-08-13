@@ -9,6 +9,7 @@
  *
  ******************************************************************************/
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include "serial.h"
 
 /* Function prototype*/
@@ -19,26 +20,71 @@ void USART_Transmit(unsigned char data);
 void USART_Flush(void);
 
 /* Global variables */
+volatile char data[5];
 
 /* Main */
 int main(void){
     USART_Init(207);
+    sei();
     LUFA_Init();
     
     while(1){
         serial_task();
         //serial_write(USART_Receive());
-        USART_Receive();
+        getData();
+        decodeData();
     }
     return 0;
 }
 
-/* Functions */
+/* Interruptions */
+ISR(USART1_RX_vect){
+    serial_write('I');
+    UCSR1A=0<<RXC1;
+}
+
+/* decode funtions */
+void getData(void){
+    char tmp;
+    int sync=0;
+
+    tmp=USART_Receive();
+    if(tmp&(1<<7)){
+        sync=0;
+        data[sync]=tmp;
+        sync++;
+    }
+
+    for(sync;sync<5;sync++){
+        tmp=USART_Receive();
+        if(tmp&(0<<7) && sync==1){
+            data[sync]=tmp;
+        }
+    }
+}
+
+void decodeData(void){
+    // TEST DATA 0b11000100
+    if(data[0]&(1<<6)){
+        serial_write('O');
+    }
+    int pulseIntesity=data[0]&3;
+    int oxygenDissolved=data[1]&6;
+    int pulseSound=data[2]&3;
+    int pulseRate=data[3]&6;
+    int oxygenSaturation=data[4]&6;
+    
+    serial_write((char)pulseIntesity);
+    //serial_write('\n');
+}
+
+/* LUFA functions */
 void LUFA_Init(void){
     // Enable LUFA
     serial_init();
 }
 
+/* USART functions */
 void USART_Init(unsigned int baud){
     // Set baud rate (from table 18-12 pp213)
     UBRR1H=(unsigned char)(baud>>8);
@@ -46,26 +92,22 @@ void USART_Init(unsigned int baud){
     
     // Set frame format 8 data (UCSZ1) 1 stop bit (USBS1)
     //UCSR1C = (0<<USBS1)|(1<<UCSZ10)|(1<<UCSZ11);
-    UCSR1C = (3<<UCSZ10);
+    UCSR1C=(3<<UCSZ10);
 
     // Parity pp208
     //UCSR1C=(1<<UPM11)|(0<<UPM10);
 
+    // Enable interruption pp206
+    UCSR1B=(1<<RXCIE1);
+
     // Enable receiver and transmitter
     //UCSR1B = (1<<RXEN1)|(1<<TXEN1);
-    UCSR1B = (1<<RXEN1);
+    UCSR1B=(1<<RXEN1);
 }
 
 unsigned char USART_Receive(void){
     /* Wait for data to be received */
     while(!(UCSR1A & (1<<RXC1)));
-
-    //if(UDR1==0b11000100){
-    if(UDR1&(1<<7)){
-        serial_write('!');
-    }else{
-        serial_write('x');
-    }
 
     /* Get and return received data from buffer */
     return UDR1;
