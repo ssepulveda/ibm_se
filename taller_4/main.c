@@ -30,53 +30,56 @@ int main(void){
     
     while(1){
         serial_task();
-        //serial_write(USART_Receive());
+        //serial_write((unsigned char)USART_Receive());
         getData();
-        decodeData();
+        //decodeData();
     }
     return 0;
 }
 
-/* Interruptions */
+/* Interruption handler */
 ISR(USART1_RX_vect){
-    serial_write('I');
+    serial_write(0xff);
     UCSR1A=0<<RXC1;
 }
 
 /* decode funtions */
 void getData(void){
-    char tmp;
+    unsigned char tmp;
     int sync=0;
 
+    // finds sync bit identifying first data package
     tmp=USART_Receive();
     if(tmp&(1<<7)){
-        sync=0;
-        data[sync]=tmp;
-        sync++;
-    }
-
-    for(sync;sync<5;sync++){
+        data[0]=tmp;
+        sync=1;
+    
+    // saves the rest of the data packages
+    while(sync<5){
         tmp=USART_Receive();
-        if(tmp&(0<<7) && sync==1){
+        if(!(tmp&(1<<7))){
             data[sync]=tmp;
+            sync++;
         }
     }
+    sync=0;
 }
 
+/*
 void decodeData(void){
     // TEST DATA 0b11000100
-    if(data[0]&(1<<6)){
-        serial_write('O');
-    }
     int pulseIntesity=data[0]&3;
     int oxygenDissolved=data[1]&6;
     int pulseSound=data[2]&3;
     int pulseRate=data[3]&6;
     int oxygenSaturation=data[4]&6;
     
-    serial_write((char)pulseIntesity);
+    //serial_write((unsigned char)pulseIntesity);
     //serial_write('\n');
+    //serial_write((char)oxygenSaturation);
+    //serial_write('\r');
 }
+*/
 
 /* LUFA functions */
 void LUFA_Init(void){
@@ -98,7 +101,7 @@ void USART_Init(unsigned int baud){
     //UCSR1C=(1<<UPM11)|(0<<UPM10);
 
     // Enable interruption pp206
-    UCSR1B=(1<<RXCIE1);
+    //UCSR1B=(1<<RXCIE1);
 
     // Enable receiver and transmitter
     //UCSR1B = (1<<RXEN1)|(1<<TXEN1);
@@ -106,18 +109,18 @@ void USART_Init(unsigned int baud){
 }
 
 unsigned char USART_Receive(void){
-    /* Wait for data to be received */
+    // Wait for data to be received
     while(!(UCSR1A & (1<<RXC1)));
 
-    /* Get and return received data from buffer */
+    // Get and return received data from buffer
     return UDR1;
 }
 
 void USART_Transmit(unsigned char data){
-    /* Wait for empty transmit buffer */
+    // Wait for empty transmit buffer
     while(!( UCSR1A & (1<<UDRE1)));
 
-    /* Put data into buffer, sends the data */
+    // Put data into buffer, sends the data
     UDR1 = data;
 }
 
