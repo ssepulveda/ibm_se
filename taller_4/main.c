@@ -32,7 +32,7 @@ int main(void){
         serial_task();
         //serial_write((unsigned char)USART_Receive());
         getData();
-        //decodeData();
+        decodeData();
     }
     return 0;
 }
@@ -49,37 +49,39 @@ void getData(void){
     int sync=0;
 
     // finds sync bit identifying first data package
-    tmp=USART_Receive();
-    if(tmp&(1<<7)){
-        data[0]=tmp;
-        sync=1;
-    
-    // saves the rest of the data packages
-    while(sync<5){
+    while(sync==0){
         tmp=USART_Receive();
-        if(!(tmp&(1<<7))){
-            data[sync]=tmp;
-            sync++;
+        if(tmp&(1<<7)){
+            data[0]=tmp;
+            sync=1;
         }
     }
-    sync=0;
+    
+    for(int i=1;i<=4;i++){
+        tmp=USART_Receive();
+        if(!(tmp&(1<<7)) && tmp!=data[i-1] && sync==1){
+            data[i]=tmp;
+        }else{
+            i--;
+        }
+    }
 }
 
-/*
 void decodeData(void){
     // TEST DATA 0b11000100
-    int pulseIntesity=data[0]&3;
+    uint8_t pulseIntesity=data[0]&3 - '0';
     int oxygenDissolved=data[1]&6;
     int pulseSound=data[2]&3;
     int pulseRate=data[3]&6;
     int oxygenSaturation=data[4]&6;
     
-    //serial_write((unsigned char)pulseIntesity);
+    //serial_write((unsigned char)pulseIntesity+48);
+    serial_write(pulseIntesity);
     //serial_write('\n');
     //serial_write((char)oxygenSaturation);
+    //serial_write('\n');
     //serial_write('\r');
 }
-*/
 
 /* LUFA functions */
 void LUFA_Init(void){
