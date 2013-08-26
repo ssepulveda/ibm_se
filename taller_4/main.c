@@ -9,7 +9,6 @@
  *
  ******************************************************************************/
 #include <avr/io.h>
-#include <avr/interrupt.h>
 #include "serial.h"
 
 /* Function prototype*/
@@ -21,26 +20,19 @@ void USART_Flush(void);
 
 /* Global variables */
 volatile char data[5];
+volatile char bin2hex[16]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 /* Main */
 int main(void){
     USART_Init(207);
-    sei();
     LUFA_Init();
     
     while(1){
         serial_task();
-        //serial_write((unsigned char)USART_Receive());
         getData();
-        decodeData();
+        sendData();
     }
     return 0;
-}
-
-/* Interruption handler */
-ISR(USART1_RX_vect){
-    serial_write(0xff);
-    UCSR1A=0<<RXC1;
 }
 
 /* decode funtions */
@@ -67,20 +59,58 @@ void getData(void){
     }
 }
 
-void decodeData(void){
-    // TEST DATA 0b11000100
-    uint8_t pulseIntesity=data[0]&3 - '0';
-    int oxygenDissolved=data[1]&6;
-    int pulseSound=data[2]&3;
-    int pulseRate=data[3]&6;
-    int oxygenSaturation=data[4]&6;
-    
-    //serial_write((unsigned char)pulseIntesity+48);
-    serial_write(pulseIntesity);
-    //serial_write('\n');
-    //serial_write((char)oxygenSaturation);
-    //serial_write('\n');
-    //serial_write('\r');
+void sendData(void){
+    // numeric data
+    uint8_t pulseIntesity=data[0]&4;
+    uint8_t oxygenDissolved=data[1]&7;
+    uint8_t pulseSound=data[2]&4;
+    uint8_t pulseRate=data[3]&7;
+    uint8_t oxygenSaturation=data[4]&7;
+
+    // status data
+    uint8_t searchTimeTooLong='E';
+    uint8_t oxygenSaturationDecrease='E';
+    uint8_t probeError='E';
+    uint8_t searchPulse='E';
+
+    if(!(data[0]&(1<<4))){
+        searchTimeTooLong='K';
+    }
+    if(!(data[0]&(1<<5))){
+        oxygenSaturationDecrease='K';
+    }
+    if(!(data[2]&(1<<4))){
+        probeError='K';
+    }
+    if(!(data[2]&(1<<5))){
+        searchPulse='K';
+    }
+
+    // print data to LUFA
+    serial_writeBin(pulseIntesity);
+    serial_write(',');
+    serial_writeBin(oxygenDissolved);
+    serial_write(',');
+    serial_writeBin(pulseSound);
+    serial_write(',');
+    serial_writeBin(pulseRate);
+    serial_write(',');
+    serial_writeBin(oxygenSaturation);
+    serial_write(',');
+    serial_write(searchTimeTooLong);
+    serial_write(',');
+    serial_write(oxygenSaturationDecrease);
+    serial_write(',');
+    serial_write(probeError);
+    serial_write(',');
+    serial_write(searchPulse);
+    serial_write('\n');
+    serial_write('\r');
+}
+
+void serial_writeBin(uint8_t bin){
+    serial_write(bin2hex[(bin&0xF0)>>4]);
+    serial_write(bin2hex[bin&0x0F]);
 }
 
 /* LUFA functions */
