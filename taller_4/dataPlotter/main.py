@@ -31,12 +31,14 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.timer, QtCore.SIGNAL('timeout()'), self.updatePlot)
         
         # plot setup
-        #self.ui.plt1.setYRange(-2,2)
-        #self.ui.plt1.setLabel('left','Acceleration','g')
-        self.ui.plt1.showGrid(True,True,.3)
+        #self.ui.plt1.showGrid(True,True,.3)
+        self.ui.plt1.setLabel('left','Pulse Intensity','[]')
+        self.ui.plt2.setLabel('left','Oxygen Dissolved','[]')
+        self.ui.plt3.setLabel('left','Pulse Sound','[]')
+        self.ui.plt4.setLabel('left','Pulse Rate','[]')
         
         # variables
-        self.window=500
+        self.window=1000
         
         self.pulseIntesity=[0.0]*self.window
         self.oxygenDissolved=[0.0]*self.window
@@ -78,36 +80,62 @@ class MainWindow(QtGui.QMainWindow):
         data=self.smThread.getData()
         print data
         
-        self.pulseIntesity[self.counter]=float(data[0])
-        self.oxygenDissolved[self.counter]=float(data[1])
-        self.pulseSound[self.counter]=float(data[2])
-        self.pulseRate[self.counter]=float(data[3])
-        self.oxygenSaturation[self.counter]=float(data[4])
+        self.probeError=data[7]
         self.searchTimeTooLong=data[5]
         self.oxygenSaturationDecrease=data[6]
-        self.probeError=data[7]
         self.searchPulse=data[8]
+        if self.probeError=='K':
+            self.pulseIntesity[self.counter]=float(data[0])
+            self.oxygenDissolved[self.counter]=float(data[1])
+            self.pulseSound[self.counter]=float(data[2])
+            self.pulseRate[self.counter]=float(data[3])
+            self.oxygenSaturation[self.counter]=float(data[4])
         
-        # windowed plot
-        self.counter+=1
-        if self.counter==self.window-1:
-            self.counter=0
+            # windowed plot
+            self.counter+=1
+            if self.counter==self.window-1:
+                self.counter=0
         
     def updatePlot(self):
         # clear last plots
         self.ui.plt1.clear()
+        self.ui.plt2.clear()
+        self.ui.plt3.clear()
+        self.ui.plt4.clear()
         
         # plot new data
         self.ui.plt1.plot(self.pulseIntesity,pen='r')
+        self.ui.plt2.plot(self.oxygenDissolved,pen='g')
+        self.ui.plt3.plot(self.pulseSound,pen='b')
+        self.ui.plt4.plot(self.pulseRate,pen='w')
+        self.ui.plt4.plot(self.oxygenSaturation,pen='y')
                 
         # add line in current plotting position
         self.ui.plt1.addLine(x=self.counter)
+        self.ui.plt2.addLine(x=self.counter)
+        self.ui.plt3.addLine(x=self.counter)
+        self.ui.plt4.addLine(x=self.counter)
 
         # update status variables
         if self.probeError=='K':
             self.ui.lbProbeError.setEnabled(False)
         else:
             self.ui.lbProbeError.setEnabled(True)
+
+        if self.searchTimeTooLong=='K':
+            self.ui.lbSeachTimeTooLong.setEnabled(False)
+        else:
+            self.ui.lbSeachTimeTooLong.setEnabled(True)
+
+        if self.oxygenSaturationDecrease=='K':
+            self.ui.lbOxygenSaturationDecrease.setEnabled(False)
+        else:
+            self.ui.lbOxygenSaturationDecrease.setEnabled(True)
+
+        if self.searchPulse=='K':
+            self.ui.lbSearchPulse.setEnabled(False)
+        else:
+            self.ui.lbSearchPulse.setEnabled(True)
         
 if __name__ == "__main__":
     app=QtGui.QApplication(sys.argv)
