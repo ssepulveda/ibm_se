@@ -1,12 +1,14 @@
 /******************************************************************************
- * Main.c
- * 
- * Autor: Sebastian Sepulveda
- * Licencia: New BSD 
- * Descripcion:
- * Arduino Leonardo + pulse sensor amp
- *
- ******************************************************************************/
+* Taller 3 Sistemas Embebidos
+* Departamento Ingenieria Biomedica, Universidad de Valparaiso
+*
+* Autor: Sebastián Sepúlveda
+* Licencia: New BSD
+* Descripcion:
+* Comunicación serial por medio de LUFA utilizando Arduino Leonardo para
+* obtener datos desde el conversor analogo digital A0 (ADC7)
+*
+******************************************************************************/
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <inttypes.h>
@@ -19,9 +21,20 @@ void init(void);
 void write_serial(char *buffer);
 void read_data(void);
 
-// Variables globales
+/** Guarda la última lectura del ADC
+ * @details Guarda los datos obtenidos desde la última lectura del ADC7
+ */
 volatile char sensorData[5];
 
+/** Función principal de la aplicación
+ * @details Se ejecuta al inicial el procesamiento del microcontrolador
+ *
+ * Inicializa los puertos, protocolos, registros e interrupciones mediante
+ * la función @ref init
+ *
+ * Posteriormente, inicia un loop para realizar una medición del ADC7 y
+ * enviar los resultados por el puerto serial
+ */
 int main(void)
 {
     init();
@@ -35,8 +48,15 @@ int main(void)
     return 0;
 }
 
+/** Inicializa el ADC7, habilita las interrupciones e inicializa LUFA
+ * @details Configura y habilita el ADC7 para capturar datos a 125 KHz, 10 bits
+ * de resolución y habilita interrupciones al existir un nuevo dato.
+ *
+ * Posteriormente, inicializa la librería LUFA para establecer
+ * comunicación serial 8N1 con el computador.
+ */
 void init(void){
-    //*** configuracion del ADC
+    /* configuracion del ADC */
     //configurar el puerto ADC7=A0
     ADMUX|=(1<<MUX0 | 1<<MUX1 | 1<<MUX2);
     // confiurar FS del ADC @125 KHz
@@ -51,14 +71,19 @@ void init(void){
     ADCSRA|=1<<ADEN;
     // iniciar la conversion ADC
     ADCSRA|=1<<ADSC;
-    //*** fin de configuracion del ADC
 
-    //*** Habilitar interrupciones globales
+    /* Habilitar interrupciones globales */
     sei();
-    //*** habilitar el puerto serial
+    
+    /* habilitar el puerto serial */
     serial_init();
 }
 
+/** Envía el resultado del ADC7 al computador
+ * @details Envía un arreglo de char por el puerto serial utilizando la
+ * librería LUFA.
+ * @param buffer arreglo de char a enviar
+ */
 void write_serial(char *buffer)
 {
     int i=0;
@@ -68,13 +93,21 @@ void write_serial(char *buffer)
     serial_write(0x0A);
 }
 
+/** Habilita el ADC7 para realizar una nueva lectura
+ * @details Permite una nueva lectura para que @ref ISR pueda actualizar
+ * los datos
+ */
 void read_data(void)
 {
     // habilitar una nueva lectura
     ADCSRA|=1<<ADSC;
 }
 
-// Interruption handler
+/** Maneja las interrupciones
+ * @params ADC_vect interrupción por ADC
+ * @details Actualiza el valor de la última medición obtenida desde el ADC7
+ * actualizando el valor directamente a @ref sensorData como char
+ */
 ISR(ADC_vect)
 {
     // Convertir resultado en string
